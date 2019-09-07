@@ -1,6 +1,10 @@
 .PHONY: test
 test: package-lock.json
-	./node_modules/karma/bin/karma start
+	npm test
+
+.PHONY: test-watch
+test-watch: package-lock.json
+	npm run test:watch
 
 package-lock.json: package.json
 	npm install
