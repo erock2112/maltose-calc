@@ -84,8 +84,13 @@ test('starter steps', (t) => {
             cells, targetCells, gravity, maxVolume, maxGrowthPerStep);
         t.is(expect.length, got.length);
         expect.forEach((e, idx) => {
-          t.is(true, approxEqual(got[idx], e, epsilon),
-              'Expected ' + got[idx] + ' to be within ' + epsilon + ' of ' + e);
+          t.is(true, approxEqual(got[idx].gals, e[0], epsilon),
+              'Expected ' + got[idx].gals + ' to be within ' + epsilon + ' of '
+              + e[0]);
+          t.is(true, approxEqual(e[1], got[idx].growthRate, epsilon),
+              'Expected ' + got[idx].growthRate + ' to be within ' + epsilon
+              + ' of ' + e[1]);
+          t.is(e[2], got[idx].limiter);
         });
       };
 
@@ -94,14 +99,21 @@ test('starter steps', (t) => {
   tc(100, 50, 1.036, 100, 100, []);
 
   // Growth rate of 1.4 billion cells per gram of extract.
-  tc(100, 819, 1.036, 100, 100, [1.32]);
+  tc(100, 819, 1.036, 100, 100, [[1.32, 1.4, 'target']]);
 
-  // A ratio of 2 is the cutoff between the two pieces of the function. W
-  tc( 99.9999, 200, 1.036, 100, 100, [0.18]);
-  tc(100, 200, 1.036, 100, 100, [0.18]);
-  tc(100.0001, 200, 1.036, 100, 100, [0.18]);
+  // A ratio of 2 is the cutoff between the two pieces of the function.
+  tc( 99.9999, 200, 1.036, 100, 100, [[0.18, 1.4, 'target']]);
+  tc(100, 200, 1.036, 100, 100, [[0.18, 1.4, 'target']]);
+  tc(100.0001, 200, 1.036, 100, 100, [[0.18, 1.4, 'target']]);
 
   // Multiple steps are required.
-  tc(100, 819, 1.036, 1, 10, [1, 0.67]);
-  tc(100, 2000, 1.036, 3, 4, [0.55, 2.20, 1.62]);
+  tc(100, 819, 1.036, 1, 10, [
+    [1, 1.4, 'volume'],
+    [0.67, 0.67, 'target'],
+  ]);
+  tc(100, 2000, 1.036, 3, 4, [
+    [0.55, 1.4, 'growth ratio'],
+    [2.20, 1.4, 'growth ratio'],
+    [1.62, 0.63, 'target'],
+  ]);
 });

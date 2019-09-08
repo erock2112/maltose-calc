@@ -52,3 +52,12 @@ export class HopAddition {
 export const ibu = (gravity, gals, additions) => additions
     .map((a) => utilization(gravity, a.time) * a.ounces * a.aa * 74.90 / gals)
     .reduce((a, b) => a + b, 0);
+
+/**
+ * bugu returns the BU:GU ratio.
+ *
+ * @param {number} ibu - Bitterness units.
+ * @param {number} og - Original wort specific gravity.
+ * @return {number} BU:GU ratio.
+ */
+export const bugu = (ibu, og) => ibu / (og * 1000 - 1000);

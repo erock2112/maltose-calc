@@ -3,14 +3,14 @@
  */
 
 /** Assumed points per pound per gallon of DME. */
-const assumedExtractPPG = 42;
+export const assumedExtractPPG = 42;
 
 /**
  * Assumed yeast viability loss per day.
  *
  * Source: https://brewersfriend.com/yeast-pitch-rate-and-starter-calculator
  */
-const viabilityLossPerDay = 0.007;
+export const viabilityLossPerDay = 0.007;
 
 /**
  * Limit the number of starter steps to prevent infinite loops in the case of
@@ -102,7 +102,7 @@ export const targetCells = (pitchRate, batchSizeLiters, plato) => (
  *     gram of extract.
  * @return {number} Growth rate, in billions of cells per gram of extract.
  */
-export const growthRateBrauKaiser = (inoculationRate) => {
+export const growthRateBraukaiser = (inoculationRate) => {
   if (inoculationRate < 1.4) {
     return 1.4;
   } else if (inoculationRate < 3.5) {
@@ -127,9 +127,37 @@ export const growthRateBrauKaiser = (inoculationRate) => {
 export const starterCells = (cells, gravity, gals) => {
   const extractGrams =
       _gramsPerPound * (gravity - 1) * 1000 / assumedExtractPPG * gals;
-  const growthRate = growthRateBrauKaiser(cells / extractGrams);
+  const growthRate = growthRateBraukaiser(cells / extractGrams);
   return cells + growthRate * extractGrams;
 };
+
+/**
+ * StarterStep represents one starter step.
+ */
+export class StarterStep {
+  /**
+   * Create a StarterStep.
+   *
+   * @param {number} initialCells - Initial cell count, in billions.
+   * @param {number} gals - Starter volume, in gallons.
+   * @param {number} growthRate - Growth rate, per Braukaiser.
+   * @param {number} extractGrams - Grams of DME.
+   * @param {number} inoculationRate - Billions of cells per gram of extract.
+   * @param {number} finalCells - Estimated final cell count, in billions.
+   * @param {string} limiter - What parameter limited the growth at this step.
+   */
+  constructor(
+      initialCells, gals, growthRate, extractGrams, inoculationRate, finalCells,
+      limiter) {
+    this.initialCells = initialCells;
+    this.gals = gals;
+    this.growthRate = growthRate;
+    this.extractGrams = extractGrams;
+    this.inoculationRate = inoculationRate;
+    this.finalCells = finalCells;
+    this.limiter = limiter;
+  }
+}
 
 /**
  * Derive a series of one or more starter steps to achieve a given target number
@@ -139,13 +167,13 @@ export const starterCells = (cells, gravity, gals) => {
  * @param {number} targetCells - Target number of cells, in billions.
  * @param {number} gravity - Starter wort specific gravity.
  * @param {number} maxVolume - Maximum starter volume, in gallons.
- * @param {number} maxGrowthPerStep - Maximum growth ratio per step.
- * @return {number[]} Starter step volumes, in gallons.
+ * @param {number} maxGrowthRatioPerStep - Maximum growth ratio per step.
+ * @return {StarterStep[]} Starter steps.
  *
  * TODO(erock2112): Be consistent; use plato and liters.
  */
 export const starterSteps =
-    (cells, targetCells, gravity, maxVolume, maxGrowthPerStep) => {
+    (cells, targetCells, gravity, maxVolume, maxGrowthRatioPerStep) => {
       if (cells >= targetCells) {
         return [];
       }
@@ -160,18 +188,21 @@ export const starterSteps =
           // There are three factors which may limit this number:
           // 1. Our target, which we want to reach but not exceed.
           let targetStepCells = targetCells;
+          let limiter = 'target';
           // 2. Maximum growth ratio per step.
-          const maxStepCellsByGrowth = currentCells * maxGrowthPerStep;
+          const maxStepCellsByGrowth = currentCells * maxGrowthRatioPerStep;
           if (targetStepCells > maxStepCellsByGrowth) {
             targetStepCells = maxStepCellsByGrowth;
+            limiter = 'growth ratio';
           }
           // 3. Maximum starter volume.
           const minInoculationRate = currentCells / maxExtractGrams;
-          const maxGrowthRate = growthRateBrauKaiser(minInoculationRate);
+          const maxGrowthRate = growthRateBraukaiser(minInoculationRate);
           const maxStepCellsByVolume =
           currentCells + maxGrowthRate * maxExtractGrams;
           if (targetStepCells > maxStepCellsByVolume) {
             targetStepCells = maxStepCellsByVolume;
+            limiter = 'volume';
           }
 
           // Calculate the starter volume for this step.
@@ -269,7 +300,17 @@ export const starterSteps =
             gals = (targetStepCells - 0.33 * currentCells)
                  / (2.33 * extractGramsPerGal);
           }
-          steps.push(gals);
+          const extractGrams = extractGramsPerGal * gals;
+          const inoculationRate = currentCells / extractGrams;
+          steps.push(new StarterStep(
+              currentCells,
+              gals,
+              growthRateBraukaiser(inoculationRate),
+              extractGrams,
+              inoculationRate,
+              targetStepCells,
+              limiter,
+          ));
           if (targetStepCells >= targetCells || gals == 0) {
             break;
           }
