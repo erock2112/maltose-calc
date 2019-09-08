@@ -7,7 +7,7 @@ test('og calculation', t => {
 
   const tc = (gals, efficiency, ppgs, weights, expect) => {
     const got = og(gals, efficiency, ppgs, weights);
-    t.is(approxEqual(got, expect, epsilon), true,
+    t.is(true, approxEqual(got, expect, epsilon),
          'Expected ' + got + ' to be within ' + epsilon + ' of ' + expect);
   };
 
@@ -30,7 +30,7 @@ test('srm calculation', t => {
 
   const tc = (gals, lovibonds, weights, expect) => {
     const got = srm(gals, lovibonds, weights);
-    t.is(approxEqual(got, expect, epsilon), true,
+    t.is(true, approxEqual(got, expect, epsilon),
          'Expected ' + got + ' to be within ' + epsilon + ' of ' + expect);
   };
 
@@ -55,7 +55,7 @@ test('calcWeights', t => {
     const got = calcWeights(og, gals, efficiency, ppgs, percentages);
     t.is(expect.length, got.length);
     expect.forEach((e, idx) => {
-      t.is(approxEqual(got[idx], e, epsilon), true,
+      t.is(true, approxEqual(got[idx], e, epsilon),
            'Expected ' + got[idx] + ' to be within ' + epsilon + ' of ' + e);
     });
   };

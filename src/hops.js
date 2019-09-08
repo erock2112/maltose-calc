@@ -17,13 +17,15 @@ export const utilization = (gravity, time) => (
 
 /**
  * HopAddition represents one hop addition during the boil.
- *
- * @constructor
- * @param {number} ounces - Weight of the hop addition in ounces.
- * @param {number} time - Boil time of the hop addition in minutes.
- * @param {number} aa - Alpha acid percentage of the hop addition.
  */
 export class HopAddition {
+  /**
+   * Create a HopAddition.
+   *
+   * @param {number} ounces - Weight of the hop addition in ounces.
+   * @param {number} time - Boil time of the hop addition in minutes.
+   * @param {number} aa - Alpha acid percentage of the hop addition.
+   */
   constructor(ounces, time, aa) {
     this.ounces = ounces;
     this.time = time;

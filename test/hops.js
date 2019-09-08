@@ -10,7 +10,7 @@ test('ibu calculation', t => {
 
   const tc = (additions, expect) => {
     let got = ibu(og, gals, additions);
-    t.is(approxEqual(got, expect, epsilon), true,
+    t.is(true, approxEqual(got, expect, epsilon),
          'Expected ' + got + ' to be within ' + epsilon + ' of ' + expect);
   };
 
