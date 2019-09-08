@@ -90,13 +90,26 @@ test('starter steps', t => {
            ' of ' + e.volumeGals);
     });
   };
-  tc(100, 101, 1.036, 100, 100, [{volumeGals: 0, limiter: 'target'}]);
+
+  // We already have enough (or too many) cells.
+  tc(100, 100, 1.036, 100, 100, []);
+  tc(100, 50,  1.036, 100, 100, []);
+
+  // Growth rate of 1.4 billion cells per gram of extract.
   tc(100, 819, 1.036, 100, 100, [{volumeGals: 1.32, limiter: 'target'}]);
+
+  // A ratio of 2 is the cutoff between the two pieces of the function. W
+  tc( 99.9999, 200, 1.036, 100, 100, [{volumeGals: 0.18, limiter: 'target'}]);
+  tc(100,      200, 1.036, 100, 100, [{volumeGals: 0.18, limiter: 'target'}]);
+  tc(100.0001, 200, 1.036, 100, 100, [{volumeGals: 0.18, limiter: 'target'}]);
+
+  // Multiple steps are required.
   tc(100, 819, 1.036, 1, 10, [
       {volumeGals: 1, limiter: 'max starter volume'},
       {volumeGals: 0.67, limiter: 'target'}]);
-  tc(100, 2000, 1.036, 3, 10, [
-      {volumeGals: 1.65, limiter: 'max growth ratio'},
-      {volumeGals: 1.84, limiter: 'target'}]);
+  tc(100, 2000, 1.036, 3, 4, [
+      {volumeGals: 0.55, limiter: 'max growth ratio'},
+      {volumeGals: 2.20, limiter: 'max growth ratio'},
+      {volumeGals: 1.62, limiter: 'target'}]);
 
 });

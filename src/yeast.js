@@ -139,6 +139,9 @@ export const starterCells = (cells, gravity, gals) => {
  */
 export const starterSteps =
     (cells, targetCells, gravity, maxVolume, maxGrowthPerStep) => {
+  if (cells >= targetCells) {
+    return [];
+  }
   const extractGramsPerGal =
       _gramsPerPound * (gravity - 1) * 1000 / assumedExtractPPG;
   const maxExtractGrams = extractGramsPerGal * maxVolume;
@@ -232,9 +235,9 @@ export const starterSteps =
       //   currentCells < (3.5 / 2.33) * targetStepCells - (0.33 * 3.5 / 2.33) * currentCells
       //   (1 + 0.33 * 3.5 / 2.33) * currentCells < (3.5 / 2.33) * targetStepCells
       //   (1 + 0.33 * 3.5 / 2.33) / (3.5 / 2.33) * currentCells < targetStepCells
-      //   0.99571428571 * currentCells < targetStepCells
+      //   currentCells < targetStepCells
       //
-      } else if (0.99571428571 * currentCells < targetStepCells) {
+      } else if (currentCells < targetStepCells) {
         gals = (targetStepCells - 0.33 * currentCells) / (2.33 * extractGramsPerGal);
       }
       steps.push({
