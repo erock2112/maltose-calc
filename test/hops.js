@@ -2,16 +2,16 @@ import test from 'ava';
 import {approxEqual} from './testutils.js';
 import {HopAddition, ibu} from '../src/hops.js';
 
-test('ibu calculation', t => {
+test('ibu calculation', (t) => {
   const epsilon = 0.0001;
 
   let og = 1.050;
   let gals = 5;
 
   const tc = (additions, expect) => {
-    let got = ibu(og, gals, additions);
+    const got = ibu(og, gals, additions);
     t.is(true, approxEqual(got, expect, epsilon),
-         'Expected ' + got + ' to be within ' + epsilon + ' of ' + expect);
+        'Expected ' + got + ' to be within ' + epsilon + ' of ' + expect);
   };
 
   const a1 = new HopAddition(1, 60, 5);

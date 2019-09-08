@@ -5,12 +5,13 @@
 /**
  * og returns the estimated original gravity given the provided parameters.
  *
- * Source: TODO
+ * Source: TODO(erock2112)
  *
  * @param {number} gals - Batch size in gallons.
  * @param {number} efficiency - Assumed brewhouse efficiency percentage.
  * @param {number[]} ppgs - Gravity points per pound per gallon of each malt.
  * @param {number[]} weights - Weight in pounds of each malt.
+ * @return {number} Estimated original gravity.
  */
 export const og = (gals, efficiency, ppgs, weights) => {
   if (ppgs.length != weights.length) {
@@ -25,11 +26,12 @@ export const og = (gals, efficiency, ppgs, weights) => {
 /**
  * srm returns the estimated wort color in SRM.
  *
- * Source: TODO
+ * Source: TODO(erock2112)
  *
  * @param{number} gals - Batch size in gallons.
  * @param{number[]} lovibonds - Color of each malt in degrees Lovibond.
  * @param{number[]} weights - Weight in pounds of each malt.
+ * @return {number} Estimated wort color in SRM.
  */
 export const srm = (gals, lovibonds, weights) => {
   if (lovibonds.length != weights.length) {
@@ -42,12 +44,13 @@ export const srm = (gals, lovibonds, weights) => {
 };
 
 /**
- * percentages returns an array whose entries correspond to the percentages of
- * the sum of the given array elements.
+ * fractions returns an array indicating what fraction of the sum of the
+ * elements each element comprises.
  *
  * @param {number[]} values - The individual numerical values.
+ * @return {number[]} The percentage of each of the values.
  */
-export const percentages = (values) => {
+export const fractions = (values) => {
   const total = values.reduce((a, b) => a + b, 0);
   return values.map((v) => v / total);
 };
@@ -61,18 +64,18 @@ export const percentages = (values) => {
  * @param {number} efficiency - Assumed brewhouse efficiency percentage.
  * @param {number[]} ppgs - Gravity points per pound per gallon of each malt.
  * @param {number[]} percentages - Relative percentages of malts.
+ * @return {number[]} Weights of the given malts, in pounds.
  */
 export const calcWeights = (og, gals, efficiency, ppgs, percentages) => {
   if (ppgs.length != percentages.length) {
     throw new Error('Percentages must match ppgs!');
   }
   const gravityPts = (og - 1) * 100000 / efficiency * gals;
-  // Use proportions rather than assume the percentages sum to 100.
-  const totalPercent = percentages.reduce((a, b) => a + b, 0);
-  const proportions = percentages.map((pct) => pct / totalPercent);
+  // Use fractions rather than assume the percentages sum to 100.
+  const fracts = fractions(percentages);
   const contributions = ppgs
-      .map((ppg, idx) => ppg * (proportions[idx] || 0))
+      .map((ppg, idx) => ppg * (fracts[idx] || 0))
       .reduce((a, b) => a + b, 0);
   const totalLbs = contributions > 0 ? gravityPts / contributions : 0;
-  return proportions.map((prop) => prop * totalLbs);
+  return fracts.map((fraction) => fraction * totalLbs);
 };

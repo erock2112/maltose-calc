@@ -39,6 +39,7 @@ const _millisPerDay = 1000*60*60*24;
  *
  * @param {Date} now - Current date.
  * @param {Date} mfg - Manufacturing date.
+ * @return {number} Estimated viability as a fraction.
  */
 export const viability = (now, mfg) => Math.max(
     1 - viabilityLossPerDay * (now - mfg) / _millisPerDay, 0);
@@ -52,6 +53,7 @@ export const viability = (now, mfg) => Math.max(
  * @param {number} cells - Original number of cells, in billions.
  * @param {Date} now - Current date.
  * @param {Date} mfg - Manufacturing date.
+ * @return {number} Estimated number of viable cells, in billions.
  */
 export const viableCells = (cells, now, mfg) => cells * viability(now, mfg);
 
@@ -64,6 +66,7 @@ export const viableCells = (cells, now, mfg) => cells * viability(now, mfg);
  * @param {Date} now - Current date.
  * @param {number[]} cellCounts - Original numbers of cells, in billions.
  * @param {Date[]} mfgDates - Manufacturing dates.
+ * @return {number} Estimated total number of viable cells, in billions.
  */
 export const totalViableCells = (now, cellCounts, mfgDates) => {
   if (cellCounts.length != mfgDates.length) {
@@ -84,9 +87,10 @@ export const totalViableCells = (now, cellCounts, mfgDates) => {
  *     per degree plato.
  * @param {number} batchSizeLiters - Batch size, in liters.
  * @param {number} plato - Wort density, in degrees Plato.
+ * @return {number} Number of cells required to achieve the give pitch rate.
  */
 export const targetCells = (pitchRate, batchSizeLiters, plato) => (
-    pitchRate * batchSizeLiters * plato);
+  pitchRate * batchSizeLiters * plato);
 
 /**
  * Growth rate, in billions of cells per gram of extract, as a function of the
@@ -96,6 +100,7 @@ export const targetCells = (pitchRate, batchSizeLiters, plato) => (
  *
  * @param {number} inoculationRate - Number of pitched cells in billions per
  *     gram of extract.
+ * @return {number} Growth rate, in billions of cells per gram of extract.
  */
 export const growthRateBrauKaiser = (inoculationRate) => {
   if (inoculationRate < 1.4) {
@@ -115,6 +120,7 @@ export const growthRateBrauKaiser = (inoculationRate) => {
  * @param {number} cells - Original number of cells, in billions.
  * @param {number} gravity - Starter wort specific gravity.
  * @param {number} gals - Starter volume, in gallons.
+ * @return {number} Estimated cells in billions.
  *
  * TODO(erock2112): Be consistent; use plato and liters.
  */
@@ -134,121 +140,141 @@ export const starterCells = (cells, gravity, gals) => {
  * @param {number} gravity - Starter wort specific gravity.
  * @param {number} maxVolume - Maximum starter volume, in gallons.
  * @param {number} maxGrowthPerStep - Maximum growth ratio per step.
+ * @return {number[]} Starter step volumes, in gallons.
  *
  * TODO(erock2112): Be consistent; use plato and liters.
  */
 export const starterSteps =
     (cells, targetCells, gravity, maxVolume, maxGrowthPerStep) => {
-  if (cells >= targetCells) {
-    return [];
-  }
-  const extractGramsPerGal =
+      if (cells >= targetCells) {
+        return [];
+      }
+      const extractGramsPerGal =
       _gramsPerPound * (gravity - 1) * 1000 / assumedExtractPPG;
-  const maxExtractGrams = extractGramsPerGal * maxVolume;
-  const steps = [];
-  let currentCells = cells;
-  if (currentCells) {
-    for (let numSteps = 0; numSteps < _maxStarterSteps; numSteps++) {
-      // Determine the maximum number of cells we can achieve at this step.
-      // There are three factors which may limit this number:
-      // 1. Our target, which we want to reach but not exceed.
-      let targetStepCells = targetCells;
-      let limiter = 'target';
-      // 2. Maximum growth ratio per step.
-      const maxStepCellsByGrowth = currentCells * maxGrowthPerStep;
-      if (targetStepCells > maxStepCellsByGrowth) {
-        targetStepCells = maxStepCellsByGrowth;
-        limiter = 'max growth ratio';
-      }
-      // 3. Maximum starter volume.
-      const minInoculationRate = currentCells / maxExtractGrams;
-      const maxGrowthRate = growthRateBrauKaiser(minInoculationRate);
-      const maxStepCellsByVolume =
+      const maxExtractGrams = extractGramsPerGal * maxVolume;
+      const steps = [];
+      let currentCells = cells;
+      if (currentCells) {
+        for (let numSteps = 0; numSteps < _maxStarterSteps; numSteps++) {
+          // Determine the maximum number of cells we can achieve at this step.
+          // There are three factors which may limit this number:
+          // 1. Our target, which we want to reach but not exceed.
+          let targetStepCells = targetCells;
+          // 2. Maximum growth ratio per step.
+          const maxStepCellsByGrowth = currentCells * maxGrowthPerStep;
+          if (targetStepCells > maxStepCellsByGrowth) {
+            targetStepCells = maxStepCellsByGrowth;
+          }
+          // 3. Maximum starter volume.
+          const minInoculationRate = currentCells / maxExtractGrams;
+          const maxGrowthRate = growthRateBrauKaiser(minInoculationRate);
+          const maxStepCellsByVolume =
           currentCells + maxGrowthRate * maxExtractGrams;
-      if (targetStepCells > maxStepCellsByVolume) {
-        targetStepCells = maxStepCellsByVolume;
-        limiter = 'max starter volume';
-      }
+          if (targetStepCells > maxStepCellsByVolume) {
+            targetStepCells = maxStepCellsByVolume;
+          }
 
-      // Calculate the starter volume for this step.
-      let gals = 0;
+          // Calculate the starter volume for this step.
+          let gals = 0;
 
-      // These cases were derived from the Braukaiser growth rate function:
-      // http://braukaiser.com/blog/blog/2012/11/03/estimating-yeast-growth
-      // They're re-arranged to be in terms of the current and target cell
-      // counts.
-      //
-      // Given the following:
-      //
-      //   inoculationRate = currentCells / gramsDME
-      //
-      // And:
-      //
-      //   targetStepCells = currentCells + growthRate * gramsDME
-      //
-      // We have:
-      //
-      //   targetStepCells - currentCells = growthRate * gramsDME
-      //   gramsDME = (targetStepCells - currentCells) / growthRate
-      //
-      // Therefore:
-      //
-      //   inoculationRate = currentCells * growthRate / (targetStepCells - currentCells)
-      //
-      // Case 1, inoculationRate < 1.4:
-      //
-      //   inoculationRate < 1.4
-      //   currentCells * growthRate / (targetStepCells - currentCells) < 1.4
-      //   ? currentCells * 1.4 / (targetCells - currentCells) < 1.4
-      //   currentCells / (targetCells - currentCells) < 1
-      //   currentCells < targetCells - currentCells
-      //   2*currentCells < targetCells
-      //
-      // Therefore:
-      //
-      //   gals = gramsDME / extractGramsPerGal
-      //   gals = (targetStepCells - currentCells) / (growthRate * extractGramsPerGal)
-      //   gals = (targetStepCells - currentCells) / (1.4 * extractGramsPerGal)
-      //
-      if (2 * currentCells < targetCells) {
-        gals = (targetStepCells - currentCells) / (1.4 * extractGramsPerGal);
+          // These cases were derived from the Braukaiser growth rate function:
+          // http://braukaiser.com/blog/blog/2012/11/03/estimating-yeast-growth
+          // They're re-arranged to be in terms of the current and target cell
+          // counts.
+          //
+          // Given the following:
+          //
+          //   inoculationRate = currentCells / gramsDME
+          //
+          // And:
+          //
+          //   targetStepCells = currentCells + growthRate * gramsDME
+          //
+          // We have:
+          //
+          //   targetStepCells - currentCells = growthRate * gramsDME
+          //   gramsDME = (targetStepCells - currentCells) / growthRate
+          //
+          // Therefore:
+          //
+          //   inoculationRate =
+          //       currentCells * growthRate / (targetStepCells - currentCells)
+          //
+          // Case 1, inoculationRate < 1.4:
+          //
+          //   inoculationRate < 1.4
+          //   currentCells * growthRate
+          //       / (targetStepCells - currentCells) < 1.4
+          //   ? currentCells * 1.4 / (targetCells - currentCells) < 1.4
+          //   currentCells / (targetCells - currentCells) < 1
+          //   currentCells < targetCells - currentCells
+          //   2*currentCells < targetCells
+          //
+          // Therefore:
+          //
+          //   gals = gramsDME / extractGramsPerGal
+          //   gals = (targetStepCells - currentCells)
+          //        / (growthRate * extractGramsPerGal)
+          //   gals = (targetStepCells - currentCells)
+          //        / (1.4 * extractGramsPerGal)
+          //
+          if (2 * currentCells < targetCells) {
+            gals = (targetStepCells - currentCells)
+                / (1.4 * extractGramsPerGal);
 
-      // Case 2, inoculationRate < 3.5; solve for gals first:
-      //
-      //   targetStepCells - currentCells = growthRate * extractGramsPerGal * gals
-      //   targetStepCells - currentCells = (2.33 - 0.67 * inoculationRate) * extractGramsPerGal * gals
-      //   targetStepCells - currentCells = (2.33 - 0.67 * currentCells / (extractGramsPerCal * gals)) * extractGramsPerGal * gals
-      //   targetStepCells - currentCells = 2.33 * (extractGramsPerGal * gals) - 0.67 * currentCells
-      //   targetStepCells - currentCells + 0.67 * currentCells = 2.33 * extractGramsPerGal * gals
-      //   targetStepCells + (-1 + 0.67) * currentCells = 2.33 * extractGramsPerGal * gals
-      //   gals = (targetStepCells - 0.33 * currentCells) / (2.33 * extractGramsPerGal)
-      //
-      // Now the conditional:
-      //
-      //   inoculationRate < 3.5
-      //   currentCells / (extractGramsPerGal * gals) < 3.5
-      //   currentCells / (extractGramsPerGal * (targetStepCells - 0.33 * currentCells) / (2.33 * extractGramsPerGal)) < 3.5
-      //   currentCells / ((targetStepCells - 0.33 * currentCells) / 2.33) < 3.5
-      //   2.33 * currentCells / (targetStepCells - 0.33 * currentCells) < 3.5
-      //   2.33 * currentCells < 3.5 * (targetStepCells - 0.33 * currentCells)
-      //   currentCells < (3.5 / 2.33) * (targetStepCells - 0.33 * currentCells)
-      //   currentCells < (3.5 / 2.33) * targetStepCells - (0.33 * 3.5 / 2.33) * currentCells
-      //   (1 + 0.33 * 3.5 / 2.33) * currentCells < (3.5 / 2.33) * targetStepCells
-      //   (1 + 0.33 * 3.5 / 2.33) / (3.5 / 2.33) * currentCells < targetStepCells
-      //   currentCells < targetStepCells
-      //
-      } else if (currentCells < targetStepCells) {
-        gals = (targetStepCells - 0.33 * currentCells) / (2.33 * extractGramsPerGal);
+            // Case 2, inoculationRate < 3.5; solve for gals first:
+            //
+            //   targetStepCells - currentCells =
+            //       growthRate * extractGramsPerGal * gals
+            //   targetStepCells - currentCells =
+            //       (2.33 - 0.67 * inoculationRate) * extractGramsPerGal * gals
+            //   targetStepCells - currentCells =
+            //       (2.33 - 0.67 * currentCells / (extractGramsPerCal * gals))
+            //       * extractGramsPerGal * gals
+            //   targetStepCells - currentCells =
+            //       2.33 * (extractGramsPerGal * gals) - 0.67 * currentCells
+            //   targetStepCells - currentCells + 0.67 * currentCells =
+            //       2.33 * extractGramsPerGal * gals
+            //   targetStepCells + (-1 + 0.67) * currentCells =
+            //       2.33 * extractGramsPerGal * gals
+            //   gals = (targetStepCells - 0.33 * currentCells)
+            //        / (2.33 * extractGramsPerGal)
+            //
+            // Now the conditional:
+            //
+            //   inoculationRate < 3.5
+            //   currentCells / (extractGramsPerGal * gals) < 3.5
+            //   currentCells
+            //       / (extractGramsPerGal
+            //           * (targetStepCells - 0.33 * currentCells)
+            //           / (2.33 * extractGramsPerGal)) < 3.5
+            //   currentCells / ((
+            //       targetStepCells - 0.33 * currentCells) / 2.33) < 3.5
+            //   2.33 * currentCells / (
+            //       targetStepCells - 0.33 * currentCells) < 3.5
+            //   2.33 * currentCells <
+            //       3.5 * (targetStepCells - 0.33 * currentCells)
+            //   currentCells <
+            //       (3.5 / 2.33) * (targetStepCells - 0.33 * currentCells)
+            //   currentCells <
+            //       (3.5 / 2.33) * targetStepCells
+            //       - (0.33 * 3.5 / 2.33) * currentCells
+            //   (1 + 0.33 * 3.5 / 2.33) * currentCells <
+            //       (3.5 / 2.33) * targetStepCells
+            //   (1 + 0.33 * 3.5 / 2.33) / (3.5 / 2.33) * currentCells <
+            //       targetStepCells
+            //   currentCells < targetStepCells
+            //
+          } else if (currentCells < targetStepCells) {
+            gals = (targetStepCells - 0.33 * currentCells)
+                 / (2.33 * extractGramsPerGal);
+          }
+          steps.push(gals);
+          if (targetStepCells >= targetCells || gals == 0) {
+            break;
+          }
+          currentCells = targetStepCells;
+        }
       }
-      steps.push({
-        volumeGals: gals,
-        limiter: limiter,
-      });
-      if (targetStepCells >= targetCells || gals == 0) {
-        break;
-      }
-      currentCells = targetStepCells;
-    }
-  }
-  return steps;
-};
+      return steps;
+    };

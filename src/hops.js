@@ -11,9 +11,10 @@
  *
  * @param {number} gravity - Average wort specific gravity throughout the boil.
  * @param {number} time - How long this hop addition is boiled, in minutes.
+ * @return {number} The utilization of this hop addition.
  */
 export const utilization = (gravity, time) => (
-    (1.65 * (0.000125 ** (gravity - 1))) * (1 - Math.exp(-0.04 * time)) / 4.15);
+  (1.65 * (0.000125 ** (gravity - 1))) * (1 - Math.exp(-0.04 * time)) / 4.15);
 
 /**
  * HopAddition represents one hop addition during the boil.
@@ -46,7 +47,8 @@ export class HopAddition {
  * @param {number} additions[].ounces - Weight of the hop addition in ounces.
  * @param {number} additions[].time - Boil time of the hop addition in minutes.
  * @param {number} additions[].aa - Alpha acid percentage of the hop addition.
+ * @return {number} IBUs contributed by the given hop additions.
  */
-export const ibu = (og, gals, additions) => additions
-    .map((a) => utilization(og, a.time) * a.ounces * a.aa * 74.90 / gals)
+export const ibu = (gravity, gals, additions) => additions
+    .map((a) => utilization(gravity, a.time) * a.ounces * a.aa * 74.90 / gals)
     .reduce((a, b) => a + b, 0);
