@@ -1,2 +1,2 @@
-# grist.js
+# grist
 JS library providing brewing-related calculations.

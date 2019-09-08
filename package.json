@@ -1,5 +1,5 @@
 {
-  "name": "grist.js",
+  "name": "grist",
   "version": "0.0.1",
   "description": "Javascript library providing brewing-related calculations",
   "main": "index.js",
@@ -9,14 +9,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/erock2112/grist.js.git"
+    "url": "git+https://github.com/erock2112/grist.git"
   },
   "author": "",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/erock2112/grist.js/issues"
+    "url": "https://github.com/erock2112/grist/issues"
   },
-  "homepage": "https://github.com/erock2112/grist.js#readme",
+  "homepage": "https://github.com/erock2112/grist#readme",
   "devDependencies": {
     "@babel/core": "^7.6.0",
     "@babel/preset-env": "^7.6.0",
