@@ -10,5 +10,9 @@ test-watch: package-lock.json
 lint: package-lock.json
 	./node_modules/.bin/eslint ./src ./test
 
+.PHONY: publish
+publish:
+	npm publish
+
 package-lock.json: package.json
 	npm install
