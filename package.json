@@ -1,5 +1,5 @@
 {
-  "name": "grist",
+  "name": "@erock2112/maltose-calc",
   "version": "0.0.1",
   "description": "Javascript library providing brewing-related calculations",
   "main": "index.js",
@@ -9,14 +9,19 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/erock2112/grist.git"
+    "url": "git+https://github.com/erock2112/maltose-calc.git"
   },
-  "author": "",
+  "keywords": [
+    "beer",
+    "brewing",
+    "homebrew"
+  ],
+  "author": "erock2112",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/erock2112/grist/issues"
+    "url": "https://github.com/erock2112/maltose-calc/issues"
   },
-  "homepage": "https://github.com/erock2112/grist#readme",
+  "homepage": "https://github.com/erock2112/maltose-calc#readme",
   "devDependencies": {
     "@babel/core": "^7.6.0",
     "@babel/preset-env": "^7.6.0",
